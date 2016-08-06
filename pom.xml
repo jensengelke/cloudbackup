@@ -1,0 +1,133 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>cloudbackup</groupId>
+	<artifactId>cloudbackup</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<properties>
+		<jna.version>4.2.1</jna.version>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>java.net</id>
+			<url>http://central.maven.org/maven2</url>
+		</repository>
+	</repositories>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.3</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>1.10</version>
+				<configuration>
+					<!-- Set the target configuration directory to be used in the bin scripts -->
+					<configurationDirectory>config</configurationDirectory>
+					<!-- Copy the contents from "/src/main/config" to the target configuration 
+						directory in the assembled application -->
+					<copyConfigurationDirectory>true</copyConfigurationDirectory>
+					<!-- Include the target configuration directory in the beginning of 
+						the classpath declaration in the bin scripts -->
+					<includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+					<!-- set alternative assemble directory -->
+					<assembleDirectory>${project.build.directory}/assemble</assembleDirectory>
+					<!-- Extra JVM arguments that will be included in the bin scripts -->
+					<extraJvmArguments>-Xms128m</extraJvmArguments>
+					<!-- Generate bin scripts for windows and unix pr default -->
+					<platforms>
+						<platform>windows</platform>
+						<platform>unix</platform>
+					</platforms>
+					<programs>
+						<program>
+							<mainClass>cloudbackup.CloudBackupController</mainClass>
+							<id>cloudbackup</id>
+							<!-- Only generate windows bat script for this application -->
+							<platforms>
+								<platform>windows</platform>
+							</platforms>
+							<!--  commandLineArguments>
+								<commandLineArgument>mode</commandLineArgument>
+								<commandLineArgument>backupConfigFile</commandLineArgument>
+								<commandLineArgument>systemConfigFile</commandLineArgument>
+							</commandLineArguments -->
+						</program>
+							
+					</programs>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<scm>
+		<url>http://code.google.com/p/google-api-java-client/source/browse/?repo=samples</url>
+		<connection>scm:hg:https://samples.google-api-java-client.googlecode.com/hg/</connection>
+		<developerConnection>scm:hg:https://samples.google-api-java-client.googlecode.com/hg/</developerConnection>
+	</scm>
+
+	<dependencies>
+
+		<dependency>
+		    <groupId>junit</groupId>
+		    <artifactId>junit</artifactId>
+		    <version>4.12</version>
+		</dependency>
+	
+		<dependency>
+			<groupId>com.google.apis</groupId>
+			<artifactId>google-api-services-drive</artifactId>
+			<version>v2-rev135-1.19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.oauth-client</groupId>
+			<artifactId>google-oauth-client-java6</artifactId>
+			<version>1.19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.oauth-client</groupId>
+			<artifactId>google-oauth-client-jetty</artifactId>
+			<version>1.19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+			<version>${jna.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna-platform</artifactId>
+			<version>${jna.version}</version>
+		</dependency>
+
+
+	</dependencies>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.codehaus.jackson</groupId>
+				<artifactId>jackson-mapper-asl</artifactId>
+				<version>1.8.5</version>
+			</dependency>
+		</dependencies>
+
+	</dependencyManagement>
+</project>
