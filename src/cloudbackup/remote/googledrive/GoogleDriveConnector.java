@@ -22,6 +22,7 @@ import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
 import com.google.api.client.googleapis.media.MediaHttpUploaderProgressListener;
 import com.google.api.client.http.GenericUrl;
@@ -311,21 +312,36 @@ public class GoogleDriveConnector {
 			log.entering(sourceClass, sourceMethod, new Object[] { fileId });
 		}
 		Properties props = new Properties();
-
-		try {
-
-			Comment comment = drive.comments().list(fileId).execute().getItems().get(0);
-			ObjectMapper mapper = new ObjectMapper();
-			
-			props = mapper.readValue(comment.getContent(), Properties.class);
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NullPointerException npe) {
-			log.severe("no such file!");
-		}
-
+		int retryCount = 10;
+		
+		do {
+			try {
+	
+				Comment comment = drive.comments().list(fileId).execute().getItems().get(0);
+				ObjectMapper mapper = new ObjectMapper();
+				
+				props = mapper.readValue(comment.getContent(), Properties.class);
+				
+			} catch (GoogleJsonResponseException e2) {
+				if (e2.getStatusCode() == 403 && "User Rate Limit Exceeded".equals(e2.getDetails().getMessage())) {
+					System.out.println("rate limited... waiting a bit");
+					try {
+						Thread.sleep(10000*(15-retryCount));
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				retryCount--;
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (NullPointerException npe) {
+				log.severe("no such file!");
+			}
+		} while (props.isEmpty() && retryCount > 0);
+		
 		if (log.isLoggable(Level.FINE)) {
 			log.exiting(sourceClass, sourceMethod, props);
 		}
@@ -587,16 +603,34 @@ public class GoogleDriveConnector {
 		}
 
 		String headRevision = null;
-		File file;
-		try {
-			file = drive.files().get(fileId).execute();
-			if (null != file) {
-				headRevision = file.getHeadRevisionId();
+		File file = null;
+		int retryCount = 10;
+		do {
+			try {
+				file = drive.files().get(fileId).execute();
+				if (null != file) {
+					headRevision = file.getHeadRevisionId();
+				}
+			} catch (GoogleJsonResponseException e2) {
+				if (e2.getStatusCode() == 403 && "User Rate Limit Exceeded".equals(e2.getDetails().getMessage())) {
+					System.out.println("rate limited... waiting a bit");
+					try {
+						Thread.sleep(10000*(15-retryCount));
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				retryCount--;
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (Exception e1) {
+				System.out.println("EXCEPTION: " + e1.getClass());
+				e1.printStackTrace();
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} while (file == null && retryCount > 0);
 
 		if (log.isLoggable(Level.FINE)) {
 			log.exiting(sourceClass, sourceMethod, headRevision);
@@ -654,19 +688,35 @@ public class GoogleDriveConnector {
 		}
 		InputStream in = null;
 		
-		try {
-			Revision revision = drive.revisions().get(fileId, revisionId).execute();
-			if (revision.getDownloadUrl() != null && revision.getDownloadUrl().length() > 0) {
+		int retryCount = 10;
+		
+		do {
+			try {
+				Revision revision = drive.revisions().get(fileId, revisionId).execute();
+				if (revision.getDownloadUrl() != null && revision.getDownloadUrl().length() > 0) {
+					
+					HttpResponse resp = drive.getRequestFactory().buildGetRequest(new GenericUrl(revision.getDownloadUrl())).execute();
+					in = resp.getContent();
+				} else {
+					// The file doesn't have any content stored on Drive.
+				}
+			} catch (GoogleJsonResponseException e2) {
+				if (e2.getStatusCode() == 403 && "User Rate Limit Exceeded".equals(e2.getDetails().getMessage())) {
+					System.out.println("rate limited... waiting a bit");
+					try {
+						Thread.sleep(10000*(15-retryCount));
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				retryCount--;
 				
-				HttpResponse resp = drive.getRequestFactory().buildGetRequest(new GenericUrl(revision.getDownloadUrl())).execute();
-				in = resp.getContent();
-			} else {
-				// The file doesn't have any content stored on Drive.
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			}
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+		} while (null == in && retryCount>=0);
 
 		if (log.isLoggable(Level.FINE)) {
 			log.exiting(sourceClass, sourceMethod, in);
